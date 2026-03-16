@@ -34,8 +34,8 @@
 
 #include <Arduino.h>
 
-#define OPEN LOW
-#define CLOSED HIGH
+#define CLOSE LOW
+#define OPEN HIGH
 
 typedef unsigned int uint;
 typedef enum{ IDLE, PRESSED, HOLD, REPEATING, RELEASED } KeyState;

@@ -1,52 +1,93 @@
-// /*
-// ||
-// || @file Keypad.cpp
-// || @version 3.1
-// || @author Mark Stanley, Alexander Brevig
-// || @contact mstanley@technologist.com, alexanderbrevig@gmail.com
-// ||
-// || @description
-// || | This library provides a simple interface for using matrix
-// || | keypads. It supports multiple keypresses while maintaining
-// || | backwards compatibility with the old single key library.
-// || | It also supports user selectable pins and definable keymaps.
-// || #
-// ||
-// || @license
-// || | This library is free software; you can redistribute it and/or
-// || | modify it under the terms of the GNU Lesser General Public
-// || | License as published by the Free Software Foundation; version
-// || | 2.1 of the License.
-// || |
-// || | This library is distributed in the hope that it will be useful,
-// || | but WITHOUT ANY WARRANTY; without even the implied warranty of
-// || | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// || | Lesser General Public License for more details.
-// || |
-// || | You should have received a copy of the GNU Lesser General Public
-// || | License along with this library; if not, write to the Free Software
-// || | Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-// || #
-// ||
-// */
-// #include <Keypad.h>
+/*
+||
+|| @file Keypad.cpp
+|| @version 3.1
+|| @author Mark Stanley, Alexander Brevig
+|| @contact mstanley@technologist.com, alexanderbrevig@gmail.com
+||
+|| @description
+|| | This library provides a simple interface for using matrix
+|| | keypads. It supports multiple keypresses while maintaining
+|| | backwards compatibility with the old single key library.
+|| | It also supports user selectable pins and definable keymaps.
+|| #
+||
+|| @license
+|| | This library is free software; you can redistribute it and/or
+|| | modify it under the terms of the GNU Lesser General Public
+|| | License as published by the Free Software Foundation; version
+|| | 2.1 of the License.
+|| |
+|| | This library is distributed in the hope that it will be useful,
+|| | but WITHOUT ANY WARRANTY; without even the implied warranty of
+|| | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+|| | Lesser General Public License for more details.
+|| |
+|| | You should have received a copy of the GNU Lesser General Public
+|| | License along with this library; if not, write to the Free Software
+|| | Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+|| #
+||
+*/
+#include <Keypad.h>
 
-// // <<constructor>> Allows custom keymap, pin configuration, and keypad sizes.
-// Keypad::Keypad(char *userKeymap, byte *row, byte *col, byte numRows, byte numCols) {
-// 	rowPins = row;
-// 	columnPins = col;
-// 	sizeKpd.rows = numRows;
-// 	sizeKpd.columns = numCols;
+void Keypad::prefilled_array(char *arr, char defaultChar, byte n_elements){
+	for (int i = 0; i < n_elements; i++) arr[i] = defaultChar;
+}
 
-// 	begin(userKeymap);
+void Keypad::setPinMode(uint8_t *GPIOs, byte n, uint8_t MODE){
+	for (byte ii=0; ii<n; ii++){
+        pinMode(GPIOs[ii], MODE);
+		if (MODE == OUTPUT) digitalWrite(GPIOs[ii], HIGH);
+    }
 
-// 	setDebounceTime(10);
-// 	setHoldTime(500);
-// 	keypadEventListener = 0;
+}
 
-// 	startTime = 0;
-// 	single_key = false;
-// }
+void Keypad::setupRows(){
+	setPinMode(GPIOs.rows, sizeKpd.rows, OUTPUT);
+}
+void Keypad::setupCols(){
+	setPinMode(GPIOs.cols, sizeKpd.cols, INPUT_PULLUP);
+}
+
+byte Keypad::idx(){
+	return row*sizeKpd.rows + col;
+}
+
+// <<constructor>> Allows custom keymap, pin configuration, and keypad sizes.
+void Keypad::init(char *mainKeyMap, char *altKeyMap, uint8_t *row_GPIOs, uint8_t *col_GPIOs, byte numRows, byte numCols, String no_repeat) {
+	this->GPIOs.rows = row_GPIOs;
+	this->GPIOs.cols = col_GPIOs;
+	this->sizeKpd.rows = numRows;
+	this->sizeKpd.cols = numCols;
+	this->keyMap.main = mainKeyMap;
+	this->keyMap.alt = altKeyMap;
+	setupRows();
+	setupCols();
+	Key test[numRows*numCols];
+	keypad = test;
+	for (row = 0; row < sizeKpd.rows; row++){
+		for (col = 0; col<sizeKpd.cols; col++){
+			keypad[idx()].init(keyMap.main[idx()], keyMap.alt[idx()],GPIOs.rows[row], GPIOs.cols[col],  no_repeat, debounceTime, holdTime, delayTime, acceleration, maxRate );
+		}
+	}
+	// begin(userKeymap);
+
+	// setDebounceTime(10);
+	// setHoldTime(500);
+	// keypadEventListener = 0;
+
+	// startTime = 0;
+	// single_key = false;
+}
+void Keypad::init(uint8_t *row_GPIOs, uint8_t col_GPIO, byte numRows){
+	char mainKeyMap[numRows];
+	char altKeyMap[numRows];
+	prefilled_array(mainKeyMap, 'a', numRows);
+	prefilled_array(altKeyMap, 'b', numRows);
+	uint8_t col_GPIOs[]={col_GPIO};
+	init(mainKeyMap, altKeyMap, row_GPIOs, col_GPIOs, numRows, (byte)1, (String)"");
+}
 
 // // Let the user define a keymap - assume the same row/column count as defined in constructor
 // void Keypad::begin(char *userKeymap) {
@@ -54,16 +95,16 @@
 // }
 
 // // Returns a single key only. Retained for backwards compatibility.
-// char Keypad::getKey() {
-// 	single_key = true;
+// // char Keypad::getKey() {
+// // 	single_key = true;
 
-// 	if (getKeys() && key[0].stateChanged && (key[0].keyState==PRESSED))
-// 		return key[0].mainChar;
+// // 	if (getKeys() && key[0].stateChanged && (key[0].keyState==PRESSED))
+// // 		return key[0].mainChar;
 	
-// 	single_key = false;
+// // 	single_key = false;
 
-// 	return NO_KEY;
-// }
+// // 	return NO_KEY;
+// // }
 
 // // Populate the key list.
 // bool Keypad::getKeys() {
@@ -87,7 +128,7 @@
 // 	}
 
 // 	// bitMap stores ALL the keys that are being pressed.
-// 	for (byte c=0; c<sizeKpd.columns; c++) {
+// 	for (byte c=0; c<sizeKpd.cols; c++) {
 // 		pin_mode(columnPins[c],OUTPUT);
 // 		pin_write(columnPins[c], LOW);	// Begin column pulse output.
 // 		for (byte r=0; r<sizeKpd.rows; r++) {
@@ -116,10 +157,10 @@
 
 // 	// Add new keys to empty slots in the key list.
 // 	for (byte r=0; r<sizeKpd.rows; r++) {
-// 		for (byte c=0; c<sizeKpd.columns; c++) {
+// 		for (byte c=0; c<sizeKpd.cols; c++) {
 // 			boolean button = bitRead(bitMap[r],c);
-// 			char keyChar = keymap[r * sizeKpd.columns + c];
-// 			int keyCode = r * sizeKpd.columns + c;
+// 			char keyChar = keymap[r * sizeKpd.cols + c];
+// 			int keyCode = r * sizeKpd.cols + c;
 // 			int idx = findInList (keyCode);
 // 			// Key is already on the list so set its next state.
 // 			if (idx > -1)	{
@@ -274,30 +315,30 @@
 // 	}
 // }
 
-// /*
-// || @changelog
-// || | 3.1 2013-01-15 - Mark Stanley     : Fixed missing RELEASED & IDLE status when using a single key.
-// || | 3.0 2012-07-12 - Mark Stanley     : Made library multi-keypress by default. (Backwards compatible)
-// || | 3.0 2012-07-12 - Mark Stanley     : Modified pin functions to support Keypad_I2C
-// || | 3.0 2012-07-12 - Stanley & Young  : Removed static variables. Fix for multiple keypad objects.
-// || | 3.0 2012-07-12 - Mark Stanley     : Fixed bug that caused shorted pins when pressing multiple keys.
-// || | 2.0 2011-12-29 - Mark Stanley     : Added waitForKey().
-// || | 2.0 2011-12-23 - Mark Stanley     : Added the public function keyStateChanged().
-// || | 2.0 2011-12-23 - Mark Stanley     : Added the private function scanKeys().
-// || | 2.0 2011-12-23 - Mark Stanley     : Moved the Finite State Machine into the function getKeyState().
-// || | 2.0 2011-12-23 - Mark Stanley     : Removed the member variable lastUdate. Not needed after rewrite.
-// || | 1.8 2011-11-21 - Mark Stanley     : Added decision logic to compile WProgram.h or Arduino.h
-// || | 1.8 2009-07-08 - Alexander Brevig : No longer uses arrays
-// || | 1.7 2009-06-18 - Alexander Brevig : Every time a state changes the keypadEventListener will trigger, if set.
-// || | 1.7 2009-06-18 - Alexander Brevig : Added setDebounceTime. setHoldTime specifies the amount of
-// || |                                          microseconds before a HOLD state triggers
-// || | 1.7 2009-06-18 - Alexander Brevig : Added transitionTo
-// || | 1.6 2009-06-15 - Alexander Brevig : Added getState() and state variable
-// || | 1.5 2009-05-19 - Alexander Brevig : Added setHoldTime()
-// || | 1.4 2009-05-15 - Alexander Brevig : Added addEventListener
-// || | 1.3 2009-05-12 - Alexander Brevig : Added lastUdate, in order to do simple debouncing
-// || | 1.2 2009-05-09 - Alexander Brevig : Changed getKey()
-// || | 1.1 2009-04-28 - Alexander Brevig : Modified API, and made variables private
-// || | 1.0 2007-XX-XX - Mark Stanley : Initial Release
-// || #
-// */
+/*
+|| @changelog
+|| | 3.1 2013-01-15 - Mark Stanley     : Fixed missing RELEASED & IDLE status when using a single key.
+|| | 3.0 2012-07-12 - Mark Stanley     : Made library multi-keypress by default. (Backwards compatible)
+|| | 3.0 2012-07-12 - Mark Stanley     : Modified pin functions to support Keypad_I2C
+|| | 3.0 2012-07-12 - Stanley & Young  : Removed static variables. Fix for multiple keypad objects.
+|| | 3.0 2012-07-12 - Mark Stanley     : Fixed bug that caused shorted pins when pressing multiple keys.
+|| | 2.0 2011-12-29 - Mark Stanley     : Added waitForKey().
+|| | 2.0 2011-12-23 - Mark Stanley     : Added the public function keyStateChanged().
+|| | 2.0 2011-12-23 - Mark Stanley     : Added the private function scanKeys().
+|| | 2.0 2011-12-23 - Mark Stanley     : Moved the Finite State Machine into the function getKeyState().
+|| | 2.0 2011-12-23 - Mark Stanley     : Removed the member variable lastUdate. Not needed after rewrite.
+|| | 1.8 2011-11-21 - Mark Stanley     : Added decision logic to compile WProgram.h or Arduino.h
+|| | 1.8 2009-07-08 - Alexander Brevig : No longer uses arrays
+|| | 1.7 2009-06-18 - Alexander Brevig : Every time a state changes the keypadEventListener will trigger, if set.
+|| | 1.7 2009-06-18 - Alexander Brevig : Added setDebounceTime. setHoldTime specifies the amount of
+|| |                                          microseconds before a HOLD state triggers
+|| | 1.7 2009-06-18 - Alexander Brevig : Added transitionTo
+|| | 1.6 2009-06-15 - Alexander Brevig : Added getState() and state variable
+|| | 1.5 2009-05-19 - Alexander Brevig : Added setHoldTime()
+|| | 1.4 2009-05-15 - Alexander Brevig : Added addEventListener
+|| | 1.3 2009-05-12 - Alexander Brevig : Added lastUdate, in order to do simple debouncing
+|| | 1.2 2009-05-09 - Alexander Brevig : Changed getKey()
+|| | 1.1 2009-04-28 - Alexander Brevig : Modified API, and made variables private
+|| | 1.0 2007-XX-XX - Mark Stanley : Initial Release
+|| #
+*/
