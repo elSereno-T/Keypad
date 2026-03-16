@@ -29,27 +29,100 @@
 */
 #include <Key.h>
 
-
-// default constructor
-Key::Key() {
-	kchar = NO_KEY;
-	kstate = IDLE;
-	stateChanged = false;
+void Key::changeTo(KeyState newState){
+	keyState = newState;
+	stateChanged = true;
+	Serial.println(String(mainChar) + " " + KeyStateString[newState]);
 }
-
-// constructor
-Key::Key(char userKeyChar) {
-	kchar = userKeyChar;
-	kcode = -1;
-	kstate = IDLE;
-	stateChanged = false;
+void Key::read(){
+	
+	digitalWrite(GPIO.row, LOW);
+	delayMicroseconds(10);
+	update(digitalRead(GPIO.col)==LOW);
+	digitalWrite(GPIO.row, HIGH);
 }
+char Key::update(bool reading){
+	unsigned long now = millis();
+	if (reading != lastReading){
+		start = now;
+	}
+	lastReading = reading;
+	stateChanged=false;
+	if ((now - start) > debounce) {
+		if (reading != buttonState) {
+		buttonState = reading;  // State is stable — accept it
+		stateChanged=true;
+		}
+	}
+	switch (keyState){
+		case IDLE:
+			if (buttonState){
+				send = now;
+				if (ktype == REPEAT) 	changeTo(REPEATING);
+				else					changeTo(PRESSED);
+			}
+			break;
+		case PRESSED:
+			if (stateChanged) {
+				changeTo(RELEASED);					
+				return mainChar;
+			}
+			if ((now - start) > hold) {
+				if (ktype == ALTREPEAT)	changeTo(REPEATING);
+				else {					changeTo(HOLD);
+					return altChar;
+				}
+			} 
+			break;
+		case HOLD:
+			if (stateChanged) changeTo(RELEASED);
+			break;
+		case RELEASED:
+			changeTo(IDLE);
+			wait = delay;
+			break;
+		case REPEATING:
+			if (stateChanged){
+				changeTo(RELEASED);
+				return altChar;
+			}
+			if ((now-send) >= wait){
+				send += wait;
+				wait = uint16_t(max(int(wait-acceleration), int(max_rate)));
+				return altChar;
+			}
+			break;
+ 	}
+	return char(0);
+}
+bool Key::veryLongPress(int time){
+	return (buttonState && (millis()-start) > time);
+}
+void Key::init(char userMainChar, char userAltChar, uint8_t row_GPIO, uint8_t col_GPIO, String no_repeat, uint16_t DEBOUNCE_MS, uint16_t HOLD_TIME, uint16_t REPEAT_DELAY, uint16_t REPEAT_ACCELERATION, uint16_t REPEAT_MAX_RATE ){
+	mainChar = userMainChar;
+	altChar = userAltChar;
+	
+	GPIO.row = row_GPIO;
+	GPIO.col = col_GPIO;
+	// krow = row;
+	// kcol = col;
+	// kcode = row * rows + col;
 
+	if (mainChar == altChar) ktype = REPEAT;
+	else if (no_repeat.indexOf(altChar) > -1) ktype = ALT;
+	else ktype = ALTREPEAT;
 
-void Key::key_update (char userKeyChar, KeyState userState, boolean userStatus) {
-	kchar = userKeyChar;
-	kstate = userState;
-	stateChanged = userStatus;
+	keyState = IDLE;
+	buttonState = false;
+	lastReading = false;
+	stateChanged = false;
+	debounce = DEBOUNCE_MS;
+	hold = HOLD_TIME;
+	delay = REPEAT_DELAY;
+	acceleration = REPEAT_ACCELERATION;
+	start = 0;
+	send = 0;
+	wait = delay;
 }
 
 

@@ -38,24 +38,65 @@
 #define CLOSED HIGH
 
 typedef unsigned int uint;
-typedef enum{ IDLE, PRESSED, HOLD, RELEASED } KeyState;
+typedef enum{ IDLE, PRESSED, HOLD, REPEATING, RELEASED } KeyState;
+const String KeyStateString[] = {"IDLE", "PRESSED", "HOLD", "REPEATING", "RELEASED"};
+typedef enum{ REPEAT, ALTREPEAT, ALT} KeyType;
+
+
+typedef struct{ uint8_t row; uint8_t col; } GPIO_struct ;
 
 const char NO_KEY = '\0';
 
 class Key {
 public:
 	// members
-	char kchar;
-	int kcode;
-	KeyState kstate;
-	boolean stateChanged;
+	char mainChar; // primary character
+	char altChar; // secondary character
+	char typeChar;
+
+	GPIO_struct GPIO;
+	// int kcode; // key number (1D)
+	// int krow; // key row
+	// int kcol; // key colum
+	unsigned long start; // time of start of press
+	unsigned long send; // time of last send
+	uint16_t wait; // current wait period
+	KeyState keyState; // key state
+	bool buttonState; // true if pushed
+	bool lastReading; // true if it was pushed last time
+	bool stateChanged; // true if state has changed
+
 
 	// methods
-	Key();
-	Key(char userKeyChar);
-	void key_update(char userKeyChar, KeyState userState, boolean userStatus);
+	// Key();
+	// Key(char userKeyChar);
+	// Key(uint16_t userKeyChar);
+	// void key_update(char userKeyChar, KeyState userState, boolean userStatus);
+	char update(bool pressed);
+	void changeTo(KeyState newState);
+	void read();
+	void init(char userMainChar, char userAltChar, uint8_t row_GPIO, uint8_t col_GPIO,  String no_repeat, uint16_t DEBOUNCE_MS, uint16_t HOLD_TIME, uint16_t REPEAT_DELAY, uint16_t REPEAT_ACCELERATION, uint16_t REPEAT_MAX_RATE 
+	// int start,
+	// int send,
+	// int wait,
+	// KeyState kstate,
+	// KeyType ktype,
+	// bool pushed,
+	// bool lastPushed,
+	// bool stateChanged
+);
+	bool veryLongPress(int time);
 
 private:
+
+
+	KeyType ktype; // key type
+
+	uint16_t debounce;
+	uint16_t hold;
+	uint16_t delay;
+	uint16_t acceleration;
+	uint16_t max_rate;
 
 };
 
