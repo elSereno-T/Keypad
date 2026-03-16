@@ -56,7 +56,7 @@ void loop() {
         {
             if ( kpd.key[i].stateChanged )   // Only find keys that have changed state.
             {
-                switch (kpd.key[i].kstate) {  // Report active key state : IDLE, PRESSED, HOLD, or RELEASED
+                switch (kpd.key[i].keyState) {  // Report active key state : IDLE, PRESSED, HOLD, or RELEASED
                     case PRESSED:
                     msg = " PRESSED.";
                 break;
@@ -70,7 +70,7 @@ void loop() {
                     msg = " IDLE.";
                 }
                 Serial.print("Key ");
-                Serial.print(kpd.key[i].kchar);
+                Serial.print(kpd.key[i].mainChar);
                 Serial.println(msg);
             }
         }
