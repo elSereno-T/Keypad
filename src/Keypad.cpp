@@ -50,7 +50,7 @@ void Keypad::setupCols(){
 	setPinMode(GPIOs.cols, sizeKpd.cols, INPUT_PULLUP);
 }
 
-byte Keypad::idx(){
+byte Keypad::get_idx(){
 	return row*sizeKpd.rows + col;
 }
 
@@ -66,11 +66,22 @@ void Keypad::init(char *mainKeyMap, char *altKeyMap, uint8_t *row_GPIOs, uint8_t
 	setupCols();
 	Key test[numRows*numCols];
 	keypad = test;
+	debounceTime = 50;
+	holdTime = 500;
+	delayTime = 200;
+	acceleration = 20;
+	maxRate = 20;
 	for (row = 0; row < sizeKpd.rows; row++){
 		for (col = 0; col<sizeKpd.cols; col++){
-			keypad[idx()].init(keyMap.main[idx()], keyMap.alt[idx()],GPIOs.rows[row], GPIOs.cols[col],  no_repeat, debounceTime, holdTime, delayTime, acceleration, maxRate );
+
+			keypad[get_idx()].init(keyMap.main[get_idx()], keyMap.alt[get_idx()],GPIOs.rows[row], GPIOs.cols[col],  no_repeat, debounceTime, holdTime, delayTime, acceleration, maxRate );
 		}
 	}
+	Serial.println("GPIO rows");
+	for (row=0;row<sizeKpd.rows;row++)	Serial.println(GPIOs.rows[row]);
+	Serial.println("GPIO cols");
+	for (col=0;col<sizeKpd.cols;col++)	Serial.println(GPIOs.cols[col]);
+	char_out[sizeKpd.rows * sizeKpd.cols] = char(0);
 	// begin(userKeymap);
 
 	// setDebounceTime(10);
@@ -88,6 +99,56 @@ void Keypad::init(uint8_t *row_GPIOs, uint8_t col_GPIO, byte numRows){
 	uint8_t col_GPIOs[]={col_GPIO};
 	init(mainKeyMap, altKeyMap, row_GPIOs, col_GPIOs, numRows, (byte)1, (String)"");
 }
+
+char Keypad::read(){
+	char out = keypad[idx].read(true);
+	buttonState = keypad[idx].buttonState;
+	lastReading = keypad[idx].lastReading;
+	stateChanged = keypad[idx].stateChanged;
+	keyState = keypad[idx].keyState;
+	start = keypad[idx].start;
+	return out;
+}
+
+bool Keypad::veryLongPress(int time){
+	return keypad[idx].veryLongPress(time);
+}
+
+char* Keypad::getKeys(){
+	for (row = 0; row<sizeKpd.rows; row++){
+		digitalWrite(GPIOs.rows[row], LOW);
+		delayMicroseconds(10);
+		for (col = 0; col<sizeKpd.cols;col++){
+			char_out[get_idx()] = keypad[get_idx()].read();
+		}
+	}
+	return char_out;
+}
+
+char Keypad::getKey(byte idx){
+	setKey(idx);
+	return(read());
+}
+char Keypad::getKey(byte row, byte col){
+	this->row = row;
+	this->col = col;
+	return getKey(get_idx());
+}
+// void Keypad::setKey(){
+// 	read();
+// }
+void Keypad::setKey(byte idx){
+	this->idx = idx;
+	// getKey();
+}
+
+void Keypad::setKey(byte row, byte col){
+	this->row = row;
+	this->col = col;
+	get_idx();
+	// setKey();
+}
+
 
 // // Let the user define a keymap - assume the same row/column count as defined in constructor
 // void Keypad::begin(char *userKeymap) {

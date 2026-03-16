@@ -80,7 +80,7 @@ typedef struct {
 
 
 //class Keypad : public Key, public HAL_obj {
-class Keypad {
+class Keypad: public Key {
 public:
 	void init( char *userKeymap,  char *userAltKeymap,  uint8_t *row_GPIOs,  uint8_t *col_GPIOs,  byte numRows,  byte numCols,  String no_repeat);
 	void init( uint8_t *row_GPIOs,  uint8_t col_GPIO,  byte numRows);
@@ -92,12 +92,19 @@ public:
 
 	// uint bitMap[MAPSIZE];	// 10 row x 16 column array of bits. Except Due which has 32 columns.
 	Key *keypad;
+	uint debounceTime;
 	// unsigned long holdTimer;
 
 	// char getKey();
-	bool getKeys();
-	bool getKey(byte row, byte col);
-	bool getKey(byte idx);
+	char* getKeys();
+	char getKey(byte row, byte col);
+	char getKey(byte idx);
+	void setKey(byte row, byte col);
+	void setKey(byte idx);
+	void setKey();
+	char read();
+	bool veryLongPress(int time);
+	// void setRowCol(byte idx);
 	// KeyState getState();
 	// void begin(char *userKeymap);
 	// bool isPressed(char keyChar);
@@ -114,16 +121,17 @@ private:
 
 	byte row;
 	byte col;
+	byte idx;
 	unsigned long startTime;
 	KeyMapStruct keyMap;
     GPIOStruct GPIOs;
 	KeypadSize sizeKpd;
-	uint debounceTime;
 	uint holdTime;
 	uint delayTime;
 	uint acceleration;
 	uint maxRate;
 	bool single_key;
+	char* char_out;
 
 	// void scanKeys();
 	void setupRows();
@@ -133,7 +141,7 @@ private:
 	// void nextKeyState(byte n, boolean button);
 	// void transitionTo(byte n, KeyState nextState);
 	// void (*keypadEventListener)(char);
-	byte idx();
+	byte get_idx();
 	void prefilled_array(char *arr, char defaultChar, byte n_elements);
 };
 

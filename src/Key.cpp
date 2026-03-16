@@ -34,18 +34,21 @@ void Key::changeTo(KeyState newState){
 	stateChanged = true;
 	Serial.println(String(mainChar) + " " + KeyStateString[newState]);
 }
-void Key::read(){
-	
+char Key::read(bool set_row){
+
 	digitalWrite(GPIO.row, LOW);
-	delayMicroseconds(10);
-	update(digitalRead(GPIO.col)==LOW);
+	delayMicroseconds(30);
+	char out = read();
 	digitalWrite(GPIO.row, HIGH);
+	return out;
 }
-char Key::update(bool reading){
+char Key::read(){
+	return update(digitalRead(GPIO.col));
+}
+char Key::update(int read_value){
+	bool reading = read_value == CLOSE;
 	unsigned long now = millis();
-	if (reading != lastReading){
-		start = now;
-	}
+	if (reading != lastReading) start = now;
 	lastReading = reading;
 	stateChanged=false;
 	if ((now - start) > debounce) {

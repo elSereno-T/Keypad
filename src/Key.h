@@ -72,9 +72,10 @@ public:
 	// Key(char userKeyChar);
 	// Key(uint16_t userKeyChar);
 	// void key_update(char userKeyChar, KeyState userState, boolean userStatus);
-	char update(bool pressed);
+	char update(int read_value);
 	void changeTo(KeyState newState);
-	void read();
+	char read();
+	char read(bool set_row);
 	void init(char userMainChar, char userAltChar, uint8_t row_GPIO, uint8_t col_GPIO,  String no_repeat, uint16_t DEBOUNCE_MS, uint16_t HOLD_TIME, uint16_t REPEAT_DELAY, uint16_t REPEAT_ACCELERATION, uint16_t REPEAT_MAX_RATE 
 	// int start,
 	// int send,
