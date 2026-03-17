@@ -57,23 +57,25 @@ typedef char KeypadEvent;
 typedef unsigned int uint;
 typedef unsigned long ulong;
 
+#define ROW_MAX 5
+#define COL_MAX 5
+#define ELM_MAX (ROW_MAX * COL_MAX)
 // Made changes according to this post http://arduino.cc/forum/index.php?topic=58337.0
 // by Nick Gammon. Thanks for the input Nick. It actually saved 78 bytes for me. :)
 typedef struct {
     byte rows;
     byte cols;
+	byte elements;
 } KeypadSize;
 typedef struct {
-    uint8_t* rows;
-    uint8_t* cols;
+    uint8_t rows[ROW_MAX];
+    uint8_t cols[COL_MAX];
 } GPIOStruct;
 typedef struct {
-	char* main;
-	char* alt;
+	char main[ELM_MAX];
+	char alt[ELM_MAX];
 } KeyMapStruct;
 
-#define ROW_MAX 5
-#define COL_MAX 5
 // #define LIST_MAX ROW_MAX*COL_MAX		// Max number of keys on the active list.
 // #define MAPSIZE 10		// MAPSIZE is the number of rows (times 16 columns)
 #define makeKeymap(x) ((char*)x)
@@ -91,18 +93,15 @@ public:
 	// Key keypad[5][5];
 
 	// uint bitMap[MAPSIZE];	// 10 row x 16 column array of bits. Except Due which has 32 columns.
-	Key *keypad;
+	Key keypad[ELM_MAX];
 	uint debounceTime;
 	// unsigned long holdTimer;
 
 	// char getKey();
 	char* getKeys();
-	char getKey(byte row, byte col);
-	char getKey(byte idx);
-	void setKey(byte row, byte col);
-	void setKey(byte idx);
-	void setKey();
-	char read();
+	char readKey(byte row, byte col);
+	char readKey(byte idx);
+	char readKey();
 	bool veryLongPress(int time);
 	// void setRowCol(byte idx);
 	// KeyState getState();
@@ -131,18 +130,21 @@ private:
 	uint acceleration;
 	uint maxRate;
 	bool single_key;
-	char* char_out;
+	char char_out[ELM_MAX];
 
 	// void scanKeys();
-	void setupRows();
-	void setupCols();
-	void setPinMode(uint8_t *GPIO, byte n, byte MODE);
+	void setupRows(uint8_t *row_GPIOs);
+	void setupCols(uint8_t *col_GPIOs);
+	// void setPinMode(uint8_t *GPIO, byte n, byte MODE);
 	// bool updateList();
 	// void nextKeyState(byte n, boolean button);
 	// void transitionTo(byte n, KeyState nextState);
 	// void (*keypadEventListener)(char);
 	byte get_idx();
-	void prefilled_array(char *arr, char defaultChar, byte n_elements);
+	void set_idx(byte idx);
+	void get_row_col();
+	void set_row_col(byte row, byte col);
+	void prefilled_array(char *arr, char defaultChar);
 };
 
 #endif

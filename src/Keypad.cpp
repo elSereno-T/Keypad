@@ -31,51 +31,60 @@
 */
 #include <Keypad.h>
 
-void Keypad::prefilled_array(char *arr, char defaultChar, byte n_elements){
-	for (int i = 0; i < n_elements; i++) arr[i] = defaultChar;
+void Keypad::prefilled_array(char *arr, char defaultChar){
+	for (int i = 0; i < sizeKpd.elements; i++) arr[i] = defaultChar;
 }
 
-void Keypad::setPinMode(uint8_t *GPIOs, byte n, uint8_t MODE){
-	for (byte ii=0; ii<n; ii++){
-        pinMode(GPIOs[ii], MODE);
-		if (MODE == OUTPUT) digitalWrite(GPIOs[ii], HIGH);
+// void Keypad::setPinMode(uint8_t *GPIOs, byte n, uint8_t MODE){
+// 	for (byte ii=0; ii<n; ii++){
+//         pinMode(GPIOs[ii], MODE);
+// 		if (MODE == OUTPUT) digitalWrite(GPIOs[ii], HIGH);
+//     }
+
+// }
+
+void Keypad::setupRows(uint8_t *row_GPIOs){
+	for (byte ii=0; ii<sizeKpd.rows; ii++){
+		GPIOs.rows[ii] = row_GPIOs[ii];
+        pinMode(row_GPIOs[ii], OUTPUT);
+		digitalWrite(row_GPIOs[ii], HIGH);
     }
-
 }
-
-void Keypad::setupRows(){
-	setPinMode(GPIOs.rows, sizeKpd.rows, OUTPUT);
-}
-void Keypad::setupCols(){
-	setPinMode(GPIOs.cols, sizeKpd.cols, INPUT_PULLUP);
+void Keypad::setupCols(uint8_t *col_GPIOs){
+	for (byte ii=0; ii<sizeKpd.cols; ii++){
+		GPIOs.cols[ii] = col_GPIOs[ii];
+        pinMode(col_GPIOs[ii], INPUT_PULLUP);
+    }
 }
 
 byte Keypad::get_idx(){
-	return row*sizeKpd.rows + col;
+	idx = row*sizeKpd.cols + col;
+	return idx;
+}
+void Keypad::get_row_col(){
+	row = idx / sizeKpd.cols;
+	col = idx % sizeKpd.cols;
 }
 
 // <<constructor>> Allows custom keymap, pin configuration, and keypad sizes.
 void Keypad::init(char *mainKeyMap, char *altKeyMap, uint8_t *row_GPIOs, uint8_t *col_GPIOs, byte numRows, byte numCols, String no_repeat) {
-	this->GPIOs.rows = row_GPIOs;
-	this->GPIOs.cols = col_GPIOs;
-	this->sizeKpd.rows = numRows;
-	this->sizeKpd.cols = numCols;
-	this->keyMap.main = mainKeyMap;
-	this->keyMap.alt = altKeyMap;
-	setupRows();
-	setupCols();
-	Key test[numRows*numCols];
-	keypad = test;
+
 	debounceTime = 50;
 	holdTime = 500;
 	delayTime = 200;
 	acceleration = 20;
 	maxRate = 20;
-	for (row = 0; row < sizeKpd.rows; row++){
-		for (col = 0; col<sizeKpd.cols; col++){
 
-			keypad[get_idx()].init(keyMap.main[get_idx()], keyMap.alt[get_idx()],GPIOs.rows[row], GPIOs.cols[col],  no_repeat, debounceTime, holdTime, delayTime, acceleration, maxRate );
-		}
+	this->sizeKpd.rows = numRows;
+	this->sizeKpd.cols = numCols;
+	this->sizeKpd.elements = numRows * numCols;
+	setupRows(row_GPIOs);
+	setupCols(col_GPIOs);
+	for (idx=0; idx < sizeKpd.elements; idx++){
+		get_row_col();
+		keyMap.main[idx] = mainKeyMap[idx];
+		keyMap.alt[idx] = altKeyMap[idx];
+		keypad[idx].init(keyMap.main[idx], keyMap.alt[idx],GPIOs.rows[row], GPIOs.cols[col],  no_repeat, debounceTime, holdTime, delayTime, acceleration, maxRate );
 	}
 	Serial.println("GPIO rows");
 	for (row=0;row<sizeKpd.rows;row++)	Serial.println(GPIOs.rows[row]);
@@ -92,15 +101,15 @@ void Keypad::init(char *mainKeyMap, char *altKeyMap, uint8_t *row_GPIOs, uint8_t
 	// single_key = false;
 }
 void Keypad::init(uint8_t *row_GPIOs, uint8_t col_GPIO, byte numRows){
-	char mainKeyMap[numRows];
-	char altKeyMap[numRows];
-	prefilled_array(mainKeyMap, 'a', numRows);
-	prefilled_array(altKeyMap, 'b', numRows);
+	// char mainKeyMap[numRows];
+	// char altKeyMap[numRows];
+	prefilled_array(keyMap.main, 'm');
+	prefilled_array(keyMap.alt, 'a');
 	uint8_t col_GPIOs[]={col_GPIO};
-	init(mainKeyMap, altKeyMap, row_GPIOs, col_GPIOs, numRows, (byte)1, (String)"");
+	init(keyMap.main, keyMap.alt, row_GPIOs, col_GPIOs, numRows, (byte)1, (String)"");
 }
 
-char Keypad::read(){
+char Keypad::readKey(){
 	char out = keypad[idx].read(true);
 	buttonState = keypad[idx].buttonState;
 	lastReading = keypad[idx].lastReading;
@@ -119,34 +128,31 @@ char* Keypad::getKeys(){
 		digitalWrite(GPIOs.rows[row], LOW);
 		delayMicroseconds(10);
 		for (col = 0; col<sizeKpd.cols;col++){
-			char_out[get_idx()] = keypad[get_idx()].read();
+			get_idx();
+			char_out[idx] = keypad[idx].read();
 		}
+		digitalWrite(GPIOs.rows[row], HIGH);
 	}
 	return char_out;
 }
 
-char Keypad::getKey(byte idx){
-	setKey(idx);
-	return(read());
+char Keypad::readKey(byte idx){
+	set_idx(idx);
+	return readKey();
 }
-char Keypad::getKey(byte row, byte col){
-	this->row = row;
-	this->col = col;
-	return getKey(get_idx());
+char Keypad::readKey(byte row, byte col){
+	set_row_col(row, col);
+	return readKey();
 }
-// void Keypad::setKey(){
-// 	read();
-// }
-void Keypad::setKey(byte idx){
+void Keypad::set_idx(byte idx){
 	this->idx = idx;
-	// getKey();
+	get_row_col();
 }
 
-void Keypad::setKey(byte row, byte col){
+void Keypad::set_row_col(byte row, byte col){
 	this->row = row;
 	this->col = col;
 	get_idx();
-	// setKey();
 }
 
 
