@@ -57,8 +57,8 @@ typedef char KeypadEvent;
 typedef unsigned int uint;
 typedef unsigned long ulong;
 
-#define ROW_MAX 5
-#define COL_MAX 5
+#define ROW_MAX 4
+#define COL_MAX 3
 #define ELM_MAX (ROW_MAX * COL_MAX)
 // Made changes according to this post http://arduino.cc/forum/index.php?topic=58337.0
 // by Nick Gammon. Thanks for the input Nick. It actually saved 78 bytes for me. :)
@@ -103,6 +103,7 @@ public:
 	char readKey(byte idx);
 	char readKey();
 	bool veryLongPress(int time);
+	void setKey(byte idx);
 	// void setRowCol(byte idx);
 	// KeyState getState();
 	// void begin(char *userKeymap);
