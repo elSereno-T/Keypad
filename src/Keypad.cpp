@@ -154,7 +154,9 @@ void Keypad::set_row_col(byte row, byte col){
 	this->col = col;
 	get_idx();
 }
-
+void Keypad::setKey(byte idx){
+	set_idx(idx);
+}
 
 // // Let the user define a keymap - assume the same row/column count as defined in constructor
 // void Keypad::begin(char *userKeymap) {
