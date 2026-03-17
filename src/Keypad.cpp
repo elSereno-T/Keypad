@@ -90,7 +90,7 @@ void Keypad::init(char *mainKeyMap, char *altKeyMap, uint8_t *row_GPIOs, uint8_t
 	for (row=0;row<sizeKpd.rows;row++)	Serial.println(GPIOs.rows[row]);
 	Serial.println("GPIO cols");
 	for (col=0;col<sizeKpd.cols;col++)	Serial.println(GPIOs.cols[col]);
-	char_out[sizeKpd.rows * sizeKpd.cols] = char(0);
+	for (byte i = 0; i<ELM_MAX;i++)char_out[i] = char(0);
 	// begin(userKeymap);
 
 	// setDebounceTime(10);
