@@ -95,6 +95,7 @@ public:
 	// uint bitMap[MAPSIZE];	// 10 row x 16 column array of bits. Except Due which has 32 columns.
 	Key keypad[ELM_MAX];
 	uint debounceTime;
+	bool anyPress;
 	// unsigned long holdTimer;
 
 	// char getKey();
@@ -119,8 +120,10 @@ public:
 
 private:
 
-	byte row;
-	byte col;
+	byte row();
+	byte col();
+	byte prev_row;
+	byte prev_col();
 	byte idx;
 	unsigned long startTime;
 	KeyMapStruct keyMap;
@@ -143,7 +146,6 @@ private:
 	// void (*keypadEventListener)(char);
 	byte get_idx();
 	void set_idx(byte idx);
-	void get_row_col();
 	void set_row_col(byte row, byte col);
 	void prefilled_array(char *arr, char defaultChar);
 };

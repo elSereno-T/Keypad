@@ -58,12 +58,14 @@ void Keypad::setupCols(uint8_t *col_GPIOs){
 }
 
 byte Keypad::get_idx(){
-	idx = row*sizeKpd.cols + col;
 	return idx;
 }
-void Keypad::get_row_col(){
-	row = idx / sizeKpd.cols;
-	col = idx % sizeKpd.cols;
+
+byte Keypad::row(){
+	return idx / sizeKpd.cols;
+}
+byte Keypad::col(){
+	return idx % sizeKpd.cols;
 }
 
 // <<constructor>> Allows custom keymap, pin configuration, and keypad sizes.
@@ -73,7 +75,8 @@ void Keypad::init(char *mainKeyMap, char *altKeyMap, uint8_t *row_GPIOs, uint8_t
 	holdTime = 500;
 	delayTime = 200;
 	acceleration = 20;
-	maxRate = 20;
+	maxRate = 50;
+	anyPress = false;
 
 	this->sizeKpd.rows = numRows;
 	this->sizeKpd.cols = numCols;
@@ -81,16 +84,10 @@ void Keypad::init(char *mainKeyMap, char *altKeyMap, uint8_t *row_GPIOs, uint8_t
 	setupRows(row_GPIOs);
 	setupCols(col_GPIOs);
 	for (idx=0; idx < sizeKpd.elements; idx++){
-		get_row_col();
 		keyMap.main[idx] = mainKeyMap[idx];
 		keyMap.alt[idx] = altKeyMap[idx];
-		keypad[idx].init(keyMap.main[idx], keyMap.alt[idx],GPIOs.rows[row], GPIOs.cols[col],  no_repeat, debounceTime, holdTime, delayTime, acceleration, maxRate );
+		keypad[idx].init(keyMap.main[idx], keyMap.alt[idx],GPIOs.rows[row()], GPIOs.cols[col()],  no_repeat, debounceTime, holdTime, delayTime, acceleration, maxRate );
 	}
-	Serial.println("GPIO rows");
-	for (row=0;row<sizeKpd.rows;row++)	Serial.println(GPIOs.rows[row]);
-	Serial.println("GPIO cols");
-	for (col=0;col<sizeKpd.cols;col++)	Serial.println(GPIOs.cols[col]);
-	for (byte i = 0; i<ELM_MAX;i++)char_out[i] = char(0);
 	// begin(userKeymap);
 
 	// setDebounceTime(10);
@@ -116,6 +113,7 @@ char Keypad::readKey(){
 	stateChanged = keypad[idx].stateChanged;
 	keyState = keypad[idx].keyState;
 	start = keypad[idx].start;
+	anyPress = buttonState;
 	return out;
 }
 
@@ -124,15 +122,19 @@ bool Keypad::veryLongPress(int time){
 }
 
 char* Keypad::getKeys(){
-	for (row = 0; row<sizeKpd.rows; row++){
-		digitalWrite(GPIOs.rows[row], LOW);
-		delayMicroseconds(10);
-		for (col = 0; col<sizeKpd.cols;col++){
-			get_idx();
-			char_out[idx] = keypad[idx].read();
+	anyPress = false;
+	for (idx = 0; idx<sizeKpd.elements; idx++){
+		if (prev_row != row()){
+			digitalWrite(GPIOs.rows[prev_row], HIGH);
+			digitalWrite(GPIOs.rows[row()], LOW);
+			delayMicroseconds(10);
+			prev_row = row();
 		}
-		digitalWrite(GPIOs.rows[row], HIGH);
+		char_out[idx] = keypad[idx].read();
+		if (!anyPress && (keypad[idx].buttonState && keypad[idx].stateChanged)) anyPress=true;
 	}
+	prev_row = row();
+	digitalWrite(GPIOs.rows[prev_row], HIGH);
 	return char_out;
 }
 
@@ -146,13 +148,10 @@ char Keypad::readKey(byte row, byte col){
 }
 void Keypad::set_idx(byte idx){
 	this->idx = idx;
-	get_row_col();
 }
 
 void Keypad::set_row_col(byte row, byte col){
-	this->row = row;
-	this->col = col;
-	get_idx();
+	idx = row*sizeKpd.cols + col;
 }
 void Keypad::setKey(byte idx){
 	set_idx(idx);
