@@ -131,7 +131,7 @@ char* Keypad::getKeys(){
 			prev_row = row();
 		}
 		char_out[idx] = keypad[idx].read();
-		if (!anyPress && (keypad[idx].buttonState && keypad[idx].stateChanged)) anyPress=true;
+		if (!anyPress && (keypad[idx].buttonState)) anyPress=true;
 	}
 	prev_row = row();
 	digitalWrite(GPIOs.rows[prev_row], HIGH);
