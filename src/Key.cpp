@@ -32,7 +32,7 @@
 void Key::changeTo(KeyState newState){
 	keyState = newState;
 	stateChanged = true;
-	Serial.println(String(mainChar) + " " + KeyStateString[newState]);
+	Serial.println("[KEYBOARD]" + String(mainChar) + " " + KeyStateString[newState]);
 }
 char Key::read(bool set_row){
 
